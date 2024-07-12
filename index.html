@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Simulation</title>
+    <title>Calculate Probability of Success in Retirement</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.4/math.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="./uicomponents/RadioButtonCustom.js"></script>
@@ -22,6 +22,86 @@
             text-align: center;
             line-height: 30px;
             color: white;
+        }
+
+        .result-container {
+            margin-top: 20px;
+        }
+
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #085c0b;
+            margin-bottom: 20px;
+        }
+
+        /* Button Styles */
+        button {
+            display: block;
+            width: 30%;
+            padding: 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px auto 0 auto; /* Center align with margin auto */
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Progress Bar Styles */
+        #progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 30px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            border-radius: 5px;
+        }
+
+        /* Result Container Styles */
+        .result-container {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .result-container p {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .result-container span {
+            font-weight: bold;
+            color: #4caf50;
+        }
+
+        /* Plot Styles */
+        #plot {
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -61,7 +141,13 @@
     <button id="calculateButton">Calculate</button>
 
     <div id="progress-container">
-        <div id="progress-bar">0%</</div>
+        <div id="progress-bar">0%</div>
+    </div>
+
+    <div class="result-container">
+        <p>Strategy 1 (Only Bonds): <span id="strategy1Result"></span></p>
+        <p>Strategy 2 (Only Stocks): <span id="strategy2Result"></span></p>
+        <p>Best Result of Strategy 3: <span id="strategy3Result"></span></p>
     </div>
 
     <div id="plot"></div>
@@ -75,9 +161,9 @@
         getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 6000, 7000], 1);
         getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 2);
         getOrCreateRadioButtonCustom('netWorthThresholdRadio', [300e3, 500e3, 700e3], 1);
-        getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 1);
+        getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 2);
         getOrCreateRadioButtonCustom('stockMeanReturnRadio', [0.07, 0.09, 0.11], 2);
-        getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 1);
+        getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 3);
         getOrCreateRadioButtonCustom('simulationsRadio', [5000, 10000, 20000], 1);
 
         // Function to get or create a RadioButtonCustom instance
@@ -114,6 +200,15 @@
                 simulations: parseInt(simulationsRadio.getValue())
             };
 
+            // Strategy 1: Only bonds always
+            const probOnlyBonds = computeProbabilityOfSuccessWithConstantAllocation(0, parameters);
+            document.getElementById('strategy1Result').innerText = `${(probOnlyBonds * 100).toFixed(2)}%`;
+
+            // Strategy 2: Only stocks always
+            const probOnlyStocks = computeProbabilityOfSuccessWithConstantAllocation(1, parameters);
+            document.getElementById('strategy2Result').innerText = `${(probOnlyStocks * 100).toFixed(2)}%`;
+
+            // Strategy 3: only stocks below a net worth threshold, only bonds above the threshold
             const puStock2BondThreshold = math.range(0, 10, 0.25).toArray();
             let probVals = [];
             let totalIterations = puStock2BondThreshold.length;
@@ -129,125 +224,126 @@
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
 
-            let data = [{
-                x: puStock2BondThreshold,
-                y: probVals,
-                type: 'line'
-            }];
+            let bestProb = Math.max(...probVals);
+            document.getElementById('strategy3Result').innerText = `${(bestProb *100).toFixed(2)}%`;
 
-            let layout = {
-                title: 'Probability of Success with Three Allocations',
-                scene: {
-                    xaxis: {title: 'Threshold'},
-                    yaxis: {title: 'Probability'}
-                }
-            };
+let data = [{
+    x: puStock2BondThreshold,
+    y: probVals,
+    type: 'line'
+}];
 
-            Plotly.newPlot('plot', data, layout);
+let layout = {
+    title: 'Probability of Success for Strategy 3',
+    xaxis: {title: 'Threshold'},
+    yaxis: {title: 'Probability'}
+};
+
+Plotly.newPlot('plot', data, layout);
+}
+
+document.getElementById('calculateButton').addEventListener('click', calculateAndPlot);
+
+function gaussianRandom(mean, stdev) {
+let u = 1 - Math.random(); // Converting [0,1) to (0,1]
+let v = Math.random();
+let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+return z * stdev + mean;
+}
+
+function computeProbabilityOfSuccessWithConstantAllocation(stockAllocation, params) {
+let successfulOutcomes = 0;
+let bondAllocation = 1 - stockAllocation;
+
+for (let sim = 0; sim < params.simulations; sim++) {
+    let netWorth = params.initialNetWorth;
+    for (let year = 0; year < params.years; year++) {
+        let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+        if (year < params.retirementYear) {
+            netWorth += params.annualSalary - params.annualExpenses;
+        } else {
+            netWorth -= params.annualExpenses;
         }
-
-        document.getElementById('calculateButton').addEventListener('click', calculateAndPlot);
-
-        function gaussianRandom(mean, stdev) {
-            let u = 1 - Math.random(); // Converting [0,1) to (0,1]
-            let v = Math.random();
-            let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-            return z * stdev + mean;
+        if (netWorth < 0) {
+            netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+        } else {
+            netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
         }
+    }
+    if (netWorth >= params.netWorthThreshold) {
+        successfulOutcomes++;
+    }
+}
+return successfulOutcomes / params.simulations;
+}
 
-        function computeProbabilityOfSuccessWithConstantAllocation(stockAllocation, params) {
-            let successfulOutcomes = 0;
-            let bondAllocation = 1 - stockAllocation;
+function computeProbabilityOfSuccessWithTwoAllocations(puStock2BondThreshold, params) {
+let successfulOutcomes = 0;
 
-            for (let sim = 0; sim < params.simulations; sim++) {
-                let netWorth = params.initialNetWorth;
-                for (let year = 0; year < params.years; year++) {
-                    let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
-                    if (year < params.retirementYear) {
-                        netWorth += params.annualSalary - params.annualExpenses;
-                    } else {
-                        netWorth -= params.annualExpenses;
-                    }
-                    if (netWorth < 0) {
-                        netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-                    } else {
-                        netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
-                    }
-                }
-                if (netWorth >= params.netWorthThreshold) {
-                    successfulOutcomes++;
-                }
-            }
-            return successfulOutcomes / params.simulations;
+for (let sim = 0; sim < params.simulations; sim++) {
+    let netWorth = params.initialNetWorth;
+    for (let year = 0; year < params.years; year++) {
+        let stockAllocation;
+        if (netWorth < puStock2BondThreshold * params.netWorthThreshold) {
+            stockAllocation = 1; // all stocks
+        } else {
+            stockAllocation = 0; // all bonds
         }
+        let bondAllocation = 1 - stockAllocation;
+        let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
 
-        function computeProbabilityOfSuccessWithTwoAllocations(puStock2BondThreshold, params) {
-            let successfulOutcomes = 0;
-
-            for (let sim = 0; sim < params.simulations; sim++) {
-                let netWorth = params.initialNetWorth;
-                for (let year = 0; year < params.years; year++) {
-                    let stockAllocation;
-                    if (netWorth < puStock2BondThreshold * params.netWorthThreshold) {
-                        stockAllocation = 1; // all stocks
-                    } else {
-                        stockAllocation = 0; // all bonds
-                    }
-                    let bondAllocation = 1 - stockAllocation;
-                    let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
-
-                    if (year < params.retirementYear) {
-                        netWorth += params.annualSalary - params.annualExpenses;
-                    } else {
-                        netWorth -= params.annualExpenses;
-                    }
-                    if (netWorth < 0) {
-                        netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-                    } else {
-                        netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
-                    }
-                }
-                if (netWorth >= params.netWorthThreshold) {
-                    successfulOutcomes++;
-                }
-            }
-            return successfulOutcomes / params.simulations;
+        if (year < params.retirementYear) {
+            netWorth += params.annualSalary - params.annualExpenses;
+        } else {
+            netWorth -= params.annualExpenses;
         }
-
-        function computeProbabilityOfSuccessWithThreeAllocations(puStock2BondThreshold, params) {
-            let successfulOutcomes = 0;
-
-            for (let sim = 0; sim < params.simulations; sim++) {
-                let netWorth = params.initialNetWorth;
-                for (let year = 0; year < params.years; year++) {
-                    let stockAllocation;
-                    if (netWorth < puStock2BondThreshold[0] * params.netWorthThreshold) {
-                        stockAllocation = 1; // all stocks
-                    } else if (netWorth < puStock2BondThreshold[1] * params.netWorthThreshold) {
-                        stockAllocation = 0.5; // 50-50
-                    } else {
-                        stockAllocation = 0; // all bonds
-                    }
-                    let bondAllocation = 1 - stockAllocation;
-                    let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
-
-                    if (year < params.retirementYear) {
-                        netWorth += params.annualSalary - params.annualExpenses;
-                    } else {
-                        netWorth -= params.annualExpenses;
-                    }
-                    if (netWorth < 0) {
-                        netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-                    } else {
-                        netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
-                    }
-                }
-                if (netWorth >= params.netWorthThreshold) {
-                    successfulOutcomes++;
-                }
-            }
-            return successfulOutcomes / params.simulations;
+        if (netWorth < 0) {
+            netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+        } else {
+            netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
         }
-    </script>
+    }
+    if (netWorth >= params.netWorthThreshold) {
+        successfulOutcomes++;
+    }
+}
+return successfulOutcomes / params.simulations;
+}
+
+function computeProbabilityOfSuccessWithThreeAllocations(puStock2BondThreshold, params) {
+let successfulOutcomes = 0;
+
+for (let sim = 0; sim < params.simulations; sim++) {
+    let netWorth = params.initialNetWorth;
+    for (let year = 0; year < params.years; year++) {
+        let stockAllocation;
+        if (netWorth < puStock2BondThreshold[0] * params.netWorthThreshold) {
+            stockAllocation = 1; // all stocks
+        } else if (netWorth < puStock2BondThreshold[1] * params.netWorthThreshold) {
+            stockAllocation = 0.5; // 50-50
+        } else {
+            stockAllocation = 0; // all bonds
+        }
+        let bondAllocation = 1 - stockAllocation;
+        let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+
+        if (year < params.retirementYear) {
+            netWorth += params.annualSalary - params.annualExpenses;
+        } else {
+            netWorth -= params.annualExpenses;
+        }
+        if (netWorth < 0) {
+            netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+        } else {
+            netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+        }
+    }
+    if (netWorth >= params.netWorthThreshold) {
+        successfulOutcomes++;
+    }
+}
+return successfulOutcomes / params.simulations;
+}
+</script>
 </body>
 </html>
