@@ -28,21 +28,57 @@
 <body>
     <h1>Calculate Probability of Success in Retirement</h1>
 
+    <label for="years">Years: </label>
+    <div class="radio-button-custom" id="yearsRadio"></div>
+
     <label for="retirementYear">Retirement year: </label>
     <div class="radio-button-custom" id="retirementYearRadio"></div>
+
+    <label for="initialNetWorth">Initial Net Worth: </label>
+    <div class="radio-button-custom" id="initialNetWorthRadio"></div>
+
+    <label for="monthlySalary">Monthly Salary: </label>
+    <div class="radio-button-custom" id="monthlySalaryRadio"></div>
+
+    <label for="monthlyExpenses">Monthly Expenses: </label>
+    <div class="radio-button-custom" id="monthlyExpensesRadio"></div>
+
+    <label for="netWorthThreshold">Net Worth Threshold: </label>
+    <div class="radio-button-custom" id="netWorthThresholdRadio"></div>
+
+    <label for="bondReturn">Bond Return: </label>
+    <div class="radio-button-custom" id="bondReturnRadio"></div>
+
+    <label for="stockMeanReturn">Stock Mean Return: </label>
+    <div class="radio-button-custom" id="stockMeanReturnRadio"></div>
+
+    <label for="stockStdDev">Stock Standard Deviation: </label>
+    <div class="radio-button-custom" id="stockStdDevRadio"></div>
+
+    <label for="simulations">Number of Simulations: </label>
+    <div class="radio-button-custom" id="simulationsRadio"></div>
 
     <button id="calculateButton">Calculate</button>
 
     <div id="progress-container">
-        <div id="progress-bar">0%</div>
+        <div id="progress-bar">0%</</div>
     </div>
 
     <div id="plot"></div>
     <script>
         const radioButtonInstances = {}; // Global object to hold RadioButtonCustom instances
 
-        // Create the retirementYear radio group
+        // Create the radio groups
+        getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 2);
         getOrCreateRadioButtonCustom('retirementYearRadio', [20, 25, 30], 2);
+        getOrCreateRadioButtonCustom('initialNetWorthRadio', [200000, 300000, 400000], 1);
+        getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 5800, 7000], 1);
+        getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 2);
+        getOrCreateRadioButtonCustom('netWorthThresholdRadio', [400e3, 500e3, 600e3], 1);
+        getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 2);
+        getOrCreateRadioButtonCustom('stockMeanReturnRadio', [0.07, 0.09, 0.11], 2);
+        getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 1);
+        getOrCreateRadioButtonCustom('simulationsRadio', [5000, 10000, 20000], 1);
 
         // Function to get or create a RadioButtonCustom instance
         function getOrCreateRadioButtonCustom(key, options, defaultIndex) {
@@ -53,25 +89,33 @@
         }
 
         async function calculateAndPlot() {
-            
-            // Retrieve or create RadioButtonCustom objects for mortgage parameters
+            // Retrieve or create RadioButtonCustom objects for parameters
+            const yearsRadio = getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 2);
             const retirementYearRadio = getOrCreateRadioButtonCustom('retirementYearRadio', [20, 25, 30], 2);
-            
+            const initialNetWorthRadio = getOrCreateRadioButtonCustom('initialNetWorthRadio', [200000, 300000, 400000], 1);
+            const monthlySalaryRadio = getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 5800, 7000], 1);
+            const monthlyExpensesRadio = getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 1);
+            const netWorthThresholdRadio = getOrCreateRadioButtonCustom('netWorthThresholdRadio', [400e3, 500e3, 600e3], 1);
+            const bondReturnRadio = getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 0);
+            const stockMeanReturnRadio = getOrCreateRadioButtonCustom('stockMeanReturnRadio', [0.07, 0.09, 0.11], 1);
+            const stockStdDevRadio = getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 1);
+            const simulationsRadio = getOrCreateRadioButtonCustom('simulationsRadio', [5000, 10000, 20000], 1);
+
             const parameters = {
-                years: 60,
+                years: parseInt(yearsRadio.getValue()),
                 retirementYear: parseInt(retirementYearRadio.getValue()),
-                initialNetWorth: 300000,
-                salary: 5800 * 12,
-                expenses: 3000 * 12,
-                netWorthThreshold: 500e3,
-                bondReturn: 0.01,
-                stockMeanReturn: 0.09,
-                stockStdDev: 0.19,
-                simulations: 10000
+                initialNetWorth: parseInt(initialNetWorthRadio.getValue()),
+                annualSalary: parseInt(monthlySalaryRadio.getValue())*12,
+                annualExpenses: parseInt(monthlyExpensesRadio.getValue())*12,
+                netWorthThreshold: parseInt(netWorthThresholdRadio.getValue()),
+                bondReturn: parseFloat(bondReturnRadio.getValue()),
+                stockMeanReturn: parseFloat(stockMeanReturnRadio.getValue()),
+                stockStdDev: parseFloat(stockStdDevRadio.getValue()),
+                simulations: parseInt(simulationsRadio.getValue())
             };
 
-            const puStock2BondFirstThresholdVals = math.range(2, 4, 0.1).toArray();
-            const puStock2BondSecondThresholdVals = math.range(2, 4, 0.1).toArray();
+            const puStock2BondFirstThresholdVals = math.range(1.5, 2, 0.05).toArray();
+            const puStock2BondSecondThresholdVals = math.range(2.5, 4, 0.1).toArray();
             let probVals = [];
             let totalIterations = puStock2BondFirstThresholdVals.length * puStock2BondSecondThresholdVals.length;
             let iteration = 0;
@@ -114,8 +158,6 @@
 
         document.getElementById('calculateButton').addEventListener('click', calculateAndPlot);
 
-        
-
         function gaussianRandom(mean, stdev) {
             let u = 1 - Math.random(); // Converting [0,1) to (0,1]
             let v = Math.random();
@@ -132,9 +174,9 @@
                 for (let year = 0; year < params.years; year++) {
                     let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
                     if (year < params.retirementYear) {
-                        netWorth += params.salary - params.expenses;
+                        netWorth += params.annualSalary - params.annualExpenses;
                     } else {
-                        netWorth -= params.expenses;
+                        netWorth -= params.annualExpenses;
                     }
                     if (netWorth < 0) {
                         netWorth *= 1.30; // assume 30% yearly interest debt on credit card
@@ -167,9 +209,9 @@
                     let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
 
                     if (year < params.retirementYear) {
-                        netWorth += params.salary - params.expenses;
+                        netWorth += params.annualSalary - params.annualExpenses;
                     } else {
-                        netWorth -= params.expenses;
+                        netWorth -= params.annualExpenses;
                     }
                     if (netWorth < 0) {
                         netWorth *= 1.30; // assume 30% yearly interest debt on credit card
