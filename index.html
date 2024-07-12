@@ -69,13 +69,13 @@
         const radioButtonInstances = {}; // Global object to hold RadioButtonCustom instances
 
         // Create the radio groups
-        getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 2);
-        getOrCreateRadioButtonCustom('retirementYearRadio', [20, 25, 30], 2);
-        getOrCreateRadioButtonCustom('initialNetWorthRadio', [200000, 300000, 400000], 1);
-        getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 5800, 7000], 1);
+        getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 3);
+        getOrCreateRadioButtonCustom('retirementYearRadio', [10, 20, 30], 2);
+        getOrCreateRadioButtonCustom('initialNetWorthRadio', [100e3, 300e3, 500e3], 1);
+        getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 6000, 7000], 1);
         getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 2);
-        getOrCreateRadioButtonCustom('netWorthThresholdRadio', [400e3, 500e3, 600e3], 1);
-        getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 2);
+        getOrCreateRadioButtonCustom('netWorthThresholdRadio', [300e3, 500e3, 700e3], 1);
+        getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 1);
         getOrCreateRadioButtonCustom('stockMeanReturnRadio', [0.07, 0.09, 0.11], 2);
         getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 1);
         getOrCreateRadioButtonCustom('simulationsRadio', [5000, 10000, 20000], 1);
@@ -90,13 +90,13 @@
 
         async function calculateAndPlot() {
             // Retrieve or create RadioButtonCustom objects for parameters
-            const yearsRadio = getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 2);
-            const retirementYearRadio = getOrCreateRadioButtonCustom('retirementYearRadio', [20, 25, 30], 2);
-            const initialNetWorthRadio = getOrCreateRadioButtonCustom('initialNetWorthRadio', [200000, 300000, 400000], 1);
-            const monthlySalaryRadio = getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 5800, 7000], 1);
+            const yearsRadio = getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 3);
+            const retirementYearRadio = getOrCreateRadioButtonCustom('retirementYearRadio', [10, 20, 30], 1);
+            const initialNetWorthRadio = getOrCreateRadioButtonCustom('initialNetWorthRadio', [100000, 200000, 300000], 2);
+            const monthlySalaryRadio = getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 6000, 7000], 1);
             const monthlyExpensesRadio = getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 1);
-            const netWorthThresholdRadio = getOrCreateRadioButtonCustom('netWorthThresholdRadio', [400e3, 500e3, 600e3], 1);
-            const bondReturnRadio = getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 0);
+            const netWorthThresholdRadio = getOrCreateRadioButtonCustom('netWorthThresholdRadio', [200e3, 500e3, 700e3], 1);
+            const bondReturnRadio = getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 1);
             const stockMeanReturnRadio = getOrCreateRadioButtonCustom('stockMeanReturnRadio', [0.07, 0.09, 0.11], 1);
             const stockStdDevRadio = getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 1);
             const simulationsRadio = getOrCreateRadioButtonCustom('simulationsRadio', [5000, 10000, 20000], 1);
@@ -114,42 +114,32 @@
                 simulations: parseInt(simulationsRadio.getValue())
             };
 
-            const puStock2BondFirstThresholdVals = math.range(1.5, 2, 0.05).toArray();
-            const puStock2BondSecondThresholdVals = math.range(2.5, 4, 0.1).toArray();
+            const puStock2BondThreshold = math.range(0, 10, 0.25).toArray();
             let probVals = [];
-            let totalIterations = puStock2BondFirstThresholdVals.length * puStock2BondSecondThresholdVals.length;
+            let totalIterations = puStock2BondThreshold.length;
             let iteration = 0;
-
-            for (let idxFirst = puStock2BondFirstThresholdVals.length - 1; idxFirst >= 0; idxFirst--) {
-                probVals[idxFirst] = [];
-                for (let idxSecond = puStock2BondSecondThresholdVals.length - 1; idxSecond >= 0; idxSecond--) {
-                    let puStock2BondThreshold = [puStock2BondFirstThresholdVals[idxFirst], puStock2BondSecondThresholdVals[idxSecond]];
-                    probVals[idxFirst][idxSecond] = computeProbabilityOfSuccessWithThreeAllocations(puStock2BondThreshold, parameters);
-
-                    // Update progress bar
-                    iteration++;
-                    let progress = Math.floor((iteration / totalIterations) * 100);
-                    document.getElementById('progress-bar').style.width = progress + '%';
-                    document.getElementById('progress-bar').innerText = progress + '%';
-
-                    // Allow the UI to update
-                    await new Promise(resolve => setTimeout(resolve, 0));
-                }
+            for (let idx = puStock2BondThreshold.length - 1; idx >= 0; idx--) {
+                probVals[idx] = computeProbabilityOfSuccessWithTwoAllocations(puStock2BondThreshold[idx], parameters);
+                // Update progress bar
+                iteration++;
+                let progress = Math.floor((iteration / totalIterations) * 100);
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-bar').innerText = progress + '%';
+                // Allow the UI to update
+                await new Promise(resolve => setTimeout(resolve, 0));
             }
 
             let data = [{
-                x: puStock2BondFirstThresholdVals,
-                y: puStock2BondSecondThresholdVals,
-                z: probVals,
-                type: 'surface'
+                x: puStock2BondThreshold,
+                y: probVals,
+                type: 'line'
             }];
 
             let layout = {
                 title: 'Probability of Success with Three Allocations',
                 scene: {
-                    xaxis: {title: 'First threshold'},
-                    yaxis: {title: 'Second threshold'},
-                    zaxis: {title: 'Probability'}
+                    xaxis: {title: 'Threshold'},
+                    yaxis: {title: 'Probability'}
                 }
             };
 
@@ -173,6 +163,39 @@
                 let netWorth = params.initialNetWorth;
                 for (let year = 0; year < params.years; year++) {
                     let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+                    if (year < params.retirementYear) {
+                        netWorth += params.annualSalary - params.annualExpenses;
+                    } else {
+                        netWorth -= params.annualExpenses;
+                    }
+                    if (netWorth < 0) {
+                        netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+                    } else {
+                        netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+                    }
+                }
+                if (netWorth >= params.netWorthThreshold) {
+                    successfulOutcomes++;
+                }
+            }
+            return successfulOutcomes / params.simulations;
+        }
+
+        function computeProbabilityOfSuccessWithTwoAllocations(puStock2BondThreshold, params) {
+            let successfulOutcomes = 0;
+
+            for (let sim = 0; sim < params.simulations; sim++) {
+                let netWorth = params.initialNetWorth;
+                for (let year = 0; year < params.years; year++) {
+                    let stockAllocation;
+                    if (netWorth < puStock2BondThreshold * params.netWorthThreshold) {
+                        stockAllocation = 1; // all stocks
+                    } else {
+                        stockAllocation = 0; // all bonds
+                    }
+                    let bondAllocation = 1 - stockAllocation;
+                    let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+
                     if (year < params.retirementYear) {
                         netWorth += params.annualSalary - params.annualExpenses;
                     } else {
