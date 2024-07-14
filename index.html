@@ -111,11 +111,22 @@
 <body>
     <h1>Calculate Probability of Success in Retirement</h1>
 
-    <label for="years">Years: </label>
-    <div class="radio-button-custom" id="yearsRadio"></div>
+    <!-- goal definition section starts -->
+    <p>Goal: exceed a net worth of:</p>
+    <label for="netWorthThreshold"></label>
+    <div class="radio-button-custom" id="netWorthThresholdRadio"></div>
+    <p>by age:</p>
+    <label for="finalAge"></label>
+    <div class="radio-button-custom" id="finalAgeRadio"></div>
+    <!-- goal definition section ends -->
 
-    <label for="retirementYear">Retirement year: </label>
-    <div class="radio-button-custom" id="retirementYearRadio"></div>
+    <h2>Parameters</h2>
+
+    <label for="currentAge">Current age: </label>
+    <div class="radio-button-custom" id="currentAgeRadio"></div>
+
+    <label for="retirementAge">Retirement age: </label>
+    <div class="radio-button-custom" id="retirementAgeRadio"></div>
 
     <label for="initialNetWorth">Initial net worth: <span id="initialNetWorthValue">200000</span>
         <span class="tooltip-icon">?</span>
@@ -128,9 +139,6 @@
 
     <label for="monthlyExpenses">Monthly expenses: </label>
     <div class="radio-button-custom" id="monthlyExpensesRadio"></div>
-
-    <label for="netWorthThreshold">Net worth threshold: </label>
-    <div class="radio-button-custom" id="netWorthThresholdRadio"></div>
 
     <label for="bondReturn">Bonds annual return: </label>
     <div class="radio-button-custom" id="bondReturnRadio"></div>
@@ -161,8 +169,9 @@
         const radioButtonInstances = {}; // Global object to hold RadioButtonCustom instances
 
         // Create the radio groups
-        getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 3);
-        getOrCreateRadioButtonCustom('retirementYearRadio', [10, 20, 30], 2);
+        getOrCreateRadioButtonCustom('finalAgeRadio', [50, 70, 90], 3);
+        getOrCreateRadioButtonCustom('currentAgeRadio', [25, 30, 35], 3);
+        getOrCreateRadioButtonCustom('retirementAgeRadio', [45, 55, 65], 2);
         //getOrCreateRadioButtonCustom('initialNetWorthRadio', [100e3, 300e3, 500e3], 1);
         getOrCreateRadioButtonCustom('monthlySalaryRadio', [4000, 5000, 6000], 2);
         getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 2);
@@ -193,8 +202,9 @@
 
         async function calculateAndPlot() {
             // Retrieve or create RadioButtonCustom objects for parameters
-            const yearsRadio = getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 3);
-            const retirementYearRadio = getOrCreateRadioButtonCustom('retirementYearRadio', [10, 20, 30], 1);
+            const finalAgeRadio = getOrCreateRadioButtonCustom('finalAgeRadio', [40, 50, 60], 3);
+            const currentAgeRadio = getOrCreateRadioButtonCustom('currentAgeRadio', [25, 30, 35], 3);
+            const retirementAgeRadio = getOrCreateRadioButtonCustom('retirementAgeRadio', [10, 20, 30], 1);
             //const initialNetWorthRadio = getOrCreateRadioButtonCustom('initialNetWorthRadio', [100000, 300000, 500000], 2);
             const monthlySalaryRadio = getOrCreateRadioButtonCustom('monthlySalaryRadio', [4000, 5000, 6000], 1);
             const monthlyExpensesRadio = getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 1);
@@ -208,8 +218,9 @@
             const initialNetWorth = parseFloat(document.getElementById('initialNetWorth').value);
 
             const parameters = {
-                years: parseInt(yearsRadio.getValue()),
-                retirementYear: parseInt(retirementYearRadio.getValue()),
+                finalAge: parseInt(finalAgeRadio.getValue()),
+                currentAge: parseInt(currentAgeRadio.getValue()),
+                retirementAge: parseInt(retirementAgeRadio.getValue()),
                 initialNetWorth: initialNetWorth,
                 annualSalary: parseInt(monthlySalaryRadio.getValue())*12,
                 annualExpenses: parseInt(monthlyExpensesRadio.getValue())*12,
@@ -277,9 +288,9 @@ let bondAllocation = 1 - stockAllocation;
 
 for (let sim = 0; sim < params.simulations; sim++) {
     let netWorth = params.initialNetWorth;
-    for (let year = 0; year < params.years; year++) {
+    for (let age = params.currentAge; age < params.finalAge; age++) {
         let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
-        if (year < params.retirementYear) {
+        if (age < params.retirementAge) {
             netWorth += params.annualSalary - params.annualExpenses;
         } else {
             netWorth -= params.annualExpenses;
@@ -302,7 +313,7 @@ let successfulOutcomes = 0;
 
 for (let sim = 0; sim < params.simulations; sim++) {
     let netWorth = params.initialNetWorth;
-    for (let year = 0; year < params.years; year++) {
+    for (let age = params.currentAge; age < params.finalAge; age++) {
         let stockAllocation;
         if (netWorth < puStock2BondThreshold * params.netWorthThreshold) {
             stockAllocation = 1; // all stocks
@@ -312,7 +323,7 @@ for (let sim = 0; sim < params.simulations; sim++) {
         let bondAllocation = 1 - stockAllocation;
         let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
 
-        if (year < params.retirementYear) {
+        if (age < params.retirementAge) {
             netWorth += params.annualSalary - params.annualExpenses;
         } else {
             netWorth -= params.annualExpenses;
@@ -335,7 +346,7 @@ let successfulOutcomes = 0;
 
 for (let sim = 0; sim < params.simulations; sim++) {
     let netWorth = params.initialNetWorth;
-    for (let year = 0; year < params.years; year++) {
+    for (let age = params.currentAge; age < params.finalAge; age++) {
         let stockAllocation;
         if (netWorth < puStock2BondThreshold[0] * params.netWorthThreshold) {
             stockAllocation = 1; // all stocks
@@ -347,7 +358,7 @@ for (let sim = 0; sim < params.simulations; sim++) {
         let bondAllocation = 1 - stockAllocation;
         let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
 
-        if (year < params.retirementYear) {
+        if (age < params.retirementAge) {
             netWorth += params.annualSalary - params.annualExpenses;
         } else {
             netWorth -= params.annualExpenses;
