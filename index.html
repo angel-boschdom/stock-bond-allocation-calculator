@@ -7,7 +7,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.4/math.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="./uicomponents/RadioButtonCustom.js"></script>
+    <!--<link rel="stylesheet" href="styles.css"> -->
     <link rel="stylesheet" href="./uicomponents/RadioButtonCustom.css">
+    <link rel="stylesheet" href="./uicomponents/slider.css">
+    <link rel="stylesheet" href="./uicomponents/tooltip.css">
     <style>
         #progress-container {
             width: 100%;
@@ -114,28 +117,31 @@
     <label for="retirementYear">Retirement year: </label>
     <div class="radio-button-custom" id="retirementYearRadio"></div>
 
-    <label for="initialNetWorth">Initial Net Worth: </label>
-    <div class="radio-button-custom" id="initialNetWorthRadio"></div>
+    <label for="initialNetWorth">Initial net worth: <span id="initialNetWorthValue">200000</span>
+        <span class="tooltip-icon">?</span>
+        <div class="tooltip-text">The total value of your savings (including pension investment fund) at your current age</div>
+    </label>
+    <input type="range" id="initialNetWorth" min="0" max="500e3" value="200e3" step="1e3" class="slider">
 
-    <label for="monthlySalary">Monthly Salary: </label>
+    <label for="monthlySalary">Monthly salary (+ pension contribution): </label>
     <div class="radio-button-custom" id="monthlySalaryRadio"></div>
 
-    <label for="monthlyExpenses">Monthly Expenses: </label>
+    <label for="monthlyExpenses">Monthly expenses: </label>
     <div class="radio-button-custom" id="monthlyExpensesRadio"></div>
 
-    <label for="netWorthThreshold">Net Worth Threshold: </label>
+    <label for="netWorthThreshold">Net worth threshold: </label>
     <div class="radio-button-custom" id="netWorthThresholdRadio"></div>
 
-    <label for="bondReturn">Bond Return: </label>
+    <label for="bondReturn">Bonds annual return: </label>
     <div class="radio-button-custom" id="bondReturnRadio"></div>
 
-    <label for="stockMeanReturn">Stock Mean Return: </label>
+    <label for="stockMeanReturn">Stocks annual mean return: </label>
     <div class="radio-button-custom" id="stockMeanReturnRadio"></div>
 
-    <label for="stockStdDev">Stock Standard Deviation: </label>
+    <label for="stockStdDev">Stocks annual standard deviation: </label>
     <div class="radio-button-custom" id="stockStdDevRadio"></div>
 
-    <label for="simulations">Number of Simulations: </label>
+    <label for="simulations">Number of simulations: </label>
     <div class="radio-button-custom" id="simulationsRadio"></div>
 
     <button id="calculateButton">Calculate</button>
@@ -145,9 +151,9 @@
     </div>
 
     <div class="result-container">
-        <p>Strategy 1 (Only Bonds): <span id="strategy1Result"></span></p>
-        <p>Strategy 2 (Only Stocks): <span id="strategy2Result"></span></p>
-        <p>Best Result of Strategy 3: <span id="strategy3Result"></span></p>
+        <p>Strategy 1 (only bonds): <span id="strategy1Result"></span></p>
+        <p>Strategy 2 (only stocks): <span id="strategy2Result"></span></p>
+        <p>Best result of strategy 3 (switch from stocks to bonds at a net worth threshold): <span id="strategy3Result"></span></p>
     </div>
 
     <div id="plot"></div>
@@ -157,8 +163,8 @@
         // Create the radio groups
         getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 3);
         getOrCreateRadioButtonCustom('retirementYearRadio', [10, 20, 30], 2);
-        getOrCreateRadioButtonCustom('initialNetWorthRadio', [100e3, 300e3, 500e3], 1);
-        getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 6000, 7000], 1);
+        //getOrCreateRadioButtonCustom('initialNetWorthRadio', [100e3, 300e3, 500e3], 1);
+        getOrCreateRadioButtonCustom('monthlySalaryRadio', [4000, 5000, 6000], 2);
         getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 2);
         getOrCreateRadioButtonCustom('netWorthThresholdRadio', [300e3, 500e3, 700e3], 1);
         getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 2);
@@ -174,23 +180,37 @@
             return radioButtonInstances[key];
         }
 
+        // Add slider inputs callback
+        const sliders = document.querySelectorAll('.slider');
+        sliders.forEach(slider => {
+            slider.addEventListener('input', function() {
+                const valueSpan = document.getElementById(slider.id + 'Value');
+                if (valueSpan) {
+                    valueSpan.textContent = slider.value;
+                }
+            });
+        });
+
         async function calculateAndPlot() {
             // Retrieve or create RadioButtonCustom objects for parameters
             const yearsRadio = getOrCreateRadioButtonCustom('yearsRadio', [40, 50, 60], 3);
             const retirementYearRadio = getOrCreateRadioButtonCustom('retirementYearRadio', [10, 20, 30], 1);
-            const initialNetWorthRadio = getOrCreateRadioButtonCustom('initialNetWorthRadio', [100000, 200000, 300000], 2);
-            const monthlySalaryRadio = getOrCreateRadioButtonCustom('monthlySalaryRadio', [5000, 6000, 7000], 1);
+            //const initialNetWorthRadio = getOrCreateRadioButtonCustom('initialNetWorthRadio', [100000, 300000, 500000], 2);
+            const monthlySalaryRadio = getOrCreateRadioButtonCustom('monthlySalaryRadio', [4000, 5000, 6000], 1);
             const monthlyExpensesRadio = getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 1);
-            const netWorthThresholdRadio = getOrCreateRadioButtonCustom('netWorthThresholdRadio', [200e3, 500e3, 700e3], 1);
+            const netWorthThresholdRadio = getOrCreateRadioButtonCustom('netWorthThresholdRadio', [300e3, 500e3, 700e3], 1);
             const bondReturnRadio = getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 1);
             const stockMeanReturnRadio = getOrCreateRadioButtonCustom('stockMeanReturnRadio', [0.07, 0.09, 0.11], 1);
             const stockStdDevRadio = getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 1);
             const simulationsRadio = getOrCreateRadioButtonCustom('simulationsRadio', [5000, 10000, 20000], 1);
 
+            // Get slider input values
+            const initialNetWorth = parseFloat(document.getElementById('initialNetWorth').value);
+
             const parameters = {
                 years: parseInt(yearsRadio.getValue()),
                 retirementYear: parseInt(retirementYearRadio.getValue()),
-                initialNetWorth: parseInt(initialNetWorthRadio.getValue()),
+                initialNetWorth: initialNetWorth,
                 annualSalary: parseInt(monthlySalaryRadio.getValue())*12,
                 annualExpenses: parseInt(monthlyExpensesRadio.getValue())*12,
                 netWorthThreshold: parseInt(netWorthThresholdRadio.getValue()),
