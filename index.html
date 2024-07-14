@@ -161,7 +161,7 @@
     <div class="result-container">
         <p>Strategy 1 (only bonds): <span id="strategy1Result"></span></p>
         <p>Strategy 2 (only stocks): <span id="strategy2Result"></span></p>
-        <p>Best result of strategy 3 (switch from stocks to bonds at a net worth threshold): <span id="strategy3Result"></span></p>
+        <p>Strategy 3 (switch from stocks to bonds): <span id="strategy3Result"></span></p>
     </div>
 
     <div id="plot"></div>
@@ -240,12 +240,21 @@
             document.getElementById('strategy2Result').innerText = `${(probOnlyStocks * 100).toFixed(2)}%`;
 
             // Strategy 3: only stocks below a net worth threshold, only bonds above the threshold
-            const puStock2BondThreshold = math.range(0, 10, 0.25).toArray();
+            maxThreshold = Math.max(1e6, 5*parameters.netWorthThreshold);
+
+            // Function to generate an array with `n` elements evenly spaced between `start` and `end`
+            function generateEvenlySpacedArray(start, end, n) {
+                const step = (end - start) / (n - 1);
+                return Array.from({ length: n }, (v, i) => start + i * step);
+            }
+
+            const stock2BondThreshold = generateEvenlySpacedArray(0, maxThreshold, 50);
+
             let probVals = [];
-            let totalIterations = puStock2BondThreshold.length;
+            let totalIterations = stock2BondThreshold.length;
             let iteration = 0;
-            for (let idx = puStock2BondThreshold.length - 1; idx >= 0; idx--) {
-                probVals[idx] = computeProbabilityOfSuccessWithTwoAllocations(puStock2BondThreshold[idx], parameters);
+            for (let idx = stock2BondThreshold.length - 1; idx >= 0; idx--) {
+                probVals[idx] = computeProbabilityOfSuccessWithTwoAllocations(stock2BondThreshold[idx], parameters);
                 // Update progress bar
                 iteration++;
                 let progress = Math.floor((iteration / totalIterations) * 100);
@@ -256,125 +265,128 @@
             }
 
             let bestProb = Math.max(...probVals);
-            document.getElementById('strategy3Result').innerText = `${(bestProb *100).toFixed(2)}%`;
+            let bestIdx = probVals.indexOf(bestProb);
+            let bestThreshold = stock2BondThreshold[bestIdx];
 
-let data = [{
-    x: puStock2BondThreshold,
-    y: probVals,
-    type: 'line'
-}];
+            document.getElementById('strategy3Result').innerText = `${(bestProb * 100).toFixed(2)}%, switch at net worth threshold of ${bestThreshold.toExponential(2)} $`;
 
-let layout = {
-    title: 'Probability of Success for Strategy 3',
-    xaxis: {title: 'Threshold'},
-    yaxis: {title: 'Probability'}
-};
+            let data = [{
+            x: stock2BondThreshold,
+            y: probVals,
+            type: 'line'
+        }];
 
-Plotly.newPlot('plot', data, layout);
-}
+        let layout = {
+            title: 'Probability of Success for Strategy 3',
+            xaxis: {title: 'Net Worth Threshold ($)'},
+            yaxis: {title: 'Probability'}
+        };
 
-document.getElementById('calculateButton').addEventListener('click', calculateAndPlot);
-
-function gaussianRandom(mean, stdev) {
-let u = 1 - Math.random(); // Converting [0,1) to (0,1]
-let v = Math.random();
-let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-return z * stdev + mean;
-}
-
-function computeProbabilityOfSuccessWithConstantAllocation(stockAllocation, params) {
-let successfulOutcomes = 0;
-let bondAllocation = 1 - stockAllocation;
-
-for (let sim = 0; sim < params.simulations; sim++) {
-    let netWorth = params.initialNetWorth;
-    for (let age = params.currentAge; age < params.finalAge; age++) {
-        let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
-        if (age < params.retirementAge) {
-            netWorth += params.annualSalary - params.annualExpenses;
-        } else {
-            netWorth -= params.annualExpenses;
+        Plotly.newPlot('plot', data, layout);
         }
-        if (netWorth < 0) {
-            netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-        } else {
-            netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
-        }
-    }
-    if (netWorth >= params.netWorthThreshold) {
-        successfulOutcomes++;
-    }
-}
-return successfulOutcomes / params.simulations;
-}
 
-function computeProbabilityOfSuccessWithTwoAllocations(puStock2BondThreshold, params) {
-let successfulOutcomes = 0;
+        document.getElementById('calculateButton').addEventListener('click', calculateAndPlot);
 
-for (let sim = 0; sim < params.simulations; sim++) {
-    let netWorth = params.initialNetWorth;
-    for (let age = params.currentAge; age < params.finalAge; age++) {
-        let stockAllocation;
-        if (netWorth < puStock2BondThreshold * params.netWorthThreshold) {
-            stockAllocation = 1; // all stocks
-        } else {
-            stockAllocation = 0; // all bonds
+        function gaussianRandom(mean, stdev) {
+        let u = 1 - Math.random(); // Converting [0,1) to (0,1]
+        let v = Math.random();
+        let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        return z * stdev + mean;
         }
+
+        function computeProbabilityOfSuccessWithConstantAllocation(stockAllocation, params) {
+        let successfulOutcomes = 0;                             
         let bondAllocation = 1 - stockAllocation;
-        let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
 
-        if (age < params.retirementAge) {
-            netWorth += params.annualSalary - params.annualExpenses;
-        } else {
-            netWorth -= params.annualExpenses;
+        for (let sim = 0; sim < params.simulations; sim++) {
+            let netWorth = params.initialNetWorth;
+            for (let age = params.currentAge; age < params.finalAge; age++) {
+                let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+                if (age < params.retirementAge) {
+                    netWorth += params.annualSalary - params.annualExpenses;
+                } else {
+                    netWorth -= params.annualExpenses;
+                }
+                if (netWorth < 0) {
+                    netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+                } else {
+                    netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+                }
+            }
+            if (netWorth >= params.netWorthThreshold) {
+                successfulOutcomes++;
+            }
         }
-        if (netWorth < 0) {
-            netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-        } else {
-            netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+        return successfulOutcomes / params.simulations;
         }
-    }
-    if (netWorth >= params.netWorthThreshold) {
-        successfulOutcomes++;
-    }
-}
-return successfulOutcomes / params.simulations;
-}
 
-function computeProbabilityOfSuccessWithThreeAllocations(puStock2BondThreshold, params) {
-let successfulOutcomes = 0;
+        function computeProbabilityOfSuccessWithTwoAllocations(stock2BondThreshold, params) {
+        let successfulOutcomes = 0;
 
-for (let sim = 0; sim < params.simulations; sim++) {
-    let netWorth = params.initialNetWorth;
-    for (let age = params.currentAge; age < params.finalAge; age++) {
-        let stockAllocation;
-        if (netWorth < puStock2BondThreshold[0] * params.netWorthThreshold) {
-            stockAllocation = 1; // all stocks
-        } else if (netWorth < puStock2BondThreshold[1] * params.netWorthThreshold) {
-            stockAllocation = 0.5; // 50-50
-        } else {
-            stockAllocation = 0; // all bonds
-        }
-        let bondAllocation = 1 - stockAllocation;
-        let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+        for (let sim = 0; sim < params.simulations; sim++) {
+            let netWorth = params.initialNetWorth;
+            for (let age = params.currentAge; age < params.finalAge; age++) {
+                let stockAllocation;
+                if (netWorth < stock2BondThreshold) {
+                    stockAllocation = 1; // all stocks
+                } else {
+                    stockAllocation = 0; // all bonds
+                }
+                let bondAllocation = 1 - stockAllocation;
+                let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
 
-        if (age < params.retirementAge) {
-            netWorth += params.annualSalary - params.annualExpenses;
-        } else {
-            netWorth -= params.annualExpenses;
+                if (age < params.retirementAge) {
+                    netWorth += params.annualSalary - params.annualExpenses;
+                } else {
+                    netWorth -= params.annualExpenses;
+                }
+                if (netWorth < 0) {
+                    netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+                } else {
+                    netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+                }
+            }
+            if (netWorth >= params.netWorthThreshold) {
+                successfulOutcomes++;
+            }
         }
-        if (netWorth < 0) {
-            netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-        } else {
-            netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+        return successfulOutcomes / params.simulations;
         }
-    }
-    if (netWorth >= params.netWorthThreshold) {
-        successfulOutcomes++;
-    }
-}
-return successfulOutcomes / params.simulations;
-}
-</script>
+
+        function computeProbabilityOfSuccessWithThreeAllocations(stock2BondThreshold, params) {
+        let successfulOutcomes = 0;
+
+        for (let sim = 0; sim < params.simulations; sim++) {
+            let netWorth = params.initialNetWorth;
+            for (let age = params.currentAge; age < params.finalAge; age++) {
+                let stockAllocation;
+                if (netWorth < stock2BondThreshold[0]) {
+                    stockAllocation = 1; // all stocks
+                } else if (netWorth < stock2BondThreshold[1]) {
+                    stockAllocation = 0.5; // 50-50
+                } else {
+                    stockAllocation = 0; // all bonds
+                }
+                let bondAllocation = 1 - stockAllocation;
+                let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+
+                if (age < params.retirementAge) {
+                    netWorth += params.annualSalary - params.annualExpenses;
+                } else {
+                    netWorth -= params.annualExpenses;
+                }
+                if (netWorth < 0) {
+                    netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+                } else {
+                    netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+                }
+            }
+            if (netWorth >= params.netWorthThreshold) {
+                successfulOutcomes++;
+            }
+        }
+        return successfulOutcomes / params.simulations;
+        }
+    </script>
 </body>
 </html>
