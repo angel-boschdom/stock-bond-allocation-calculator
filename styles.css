@@ -1,78 +1,94 @@
-/* General Reset */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-body {
-    background-color: #f5f5f5;
-    color: #333;
-    font-size: 14px;
-    line-height: 1.6;
-}
-.container {
-    max-width: 800px;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    text-align: center; /* Center text */
-}
-h1, h2, h3, h4 {
-    color: #333;
-}
-p {
-    margin-bottom: 1em;
-}
-
-/* Make sticky-container sticky so it is visible even when scrolling down*/
-.sticky-container {
-    position: -webkit-sticky; /* For Safari */
-    position: sticky;
-    top: 0; /* Adjust this value as needed */
-    z-index: 10; /* Ensure it sits above other content */
-    background: white; /* Provide a background to ensure content is readable */
-}
-
-/* Results summary headline styles */
-#resultsSummaryHeadline h3 {
-    color: #2fa033;
-}
-
-/* Ensure all labels and range inputs are block elements */
-label,
-input[type="range"] {
-    display: block;
-}
-
-/* Make label positions relative to avoid tooltip-text being out of screen */
-label {
-    position: relative;
-}
-
-/* Form Styles */
-#form {
-    margin-top: 10px;
-}
-
-/* Chart Container */
-canvas {
+#progress-container {
+    width: 100%;
+    background-color: #f3f3f3;
     margin-top: 20px;
-    display: block; /* Center canvas */
-    margin-left: auto;
-    margin-right: auto;
 }
 
-#timeseriesChart {
-    width: 100% !important; /* Make the chart width 100% of its parent container */
-    margin: auto; /* Center the chart if necessary */
-    display: block; /* Ensure the chart is treated as a block-level element */
+#progress-bar {
+    width: 0%;
+    height: 30px;
+    background-color: #4caf50;
+    text-align: center;
+    line-height: 30px;
+    color: white;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .container {
-        width: 98%;
-    }
+.result-container {
+    margin-top: 20px;
+}
+
+/* General Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #085c0b;
+    margin-bottom: 20px;
+}
+
+/* Button Styles */
+button {
+    display: block;
+    width: 30%;
+    padding: 10px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 20px auto 0 auto; /* Center align with margin auto */
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+/* Progress Bar Styles */
+#progress-container {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+#progress-bar {
+    width: 0%;
+    height: 30px;
+    background-color: #4caf50;
+    text-align: center;
+    line-height: 30px;
+    color: white;
+    border-radius: 5px;
+}
+
+/* Result Container Styles */
+.result-container {
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.result-container p {
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+.result-container span {
+    font-weight: bold;
+    color: #4caf50;
+}
+
+/* Plot Styles */
+#plot {
+    margin-top: 20px;
 }

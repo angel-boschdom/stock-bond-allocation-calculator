@@ -7,116 +7,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.4/math.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="./uicomponents/RadioButtonCustom.js"></script>
-    <!--<link rel="stylesheet" href="styles.css"> -->
+    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="./uicomponents/RadioButtonCustom.css">
     <link rel="stylesheet" href="./uicomponents/slider.css">
     <link rel="stylesheet" href="./uicomponents/tooltip.css">
-    <style>
-        #progress-container {
-            width: 100%;
-            background-color: #f3f3f3;
-            margin-top: 20px;
-        }
-
-        #progress-bar {
-            width: 0%;
-            height: 30px;
-            background-color: #4caf50;
-            text-align: center;
-            line-height: 30px;
-            color: white;
-        }
-
-        .result-container {
-            margin-top: 20px;
-        }
-
-        /* General Styles */
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #085c0b;
-            margin-bottom: 20px;
-        }
-
-        /* Button Styles */
-        button {
-            display: block;
-            width: 30%;
-            padding: 10px;
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 20px auto 0 auto; /* Center align with margin auto */
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        /* Progress Bar Styles */
-        #progress-container {
-            width: 100%;
-            background-color: #e0e0e0;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-
-        #progress-bar {
-            width: 0%;
-            height: 30px;
-            background-color: #4caf50;
-            text-align: center;
-            line-height: 30px;
-            color: white;
-            border-radius: 5px;
-        }
-
-        /* Result Container Styles */
-        .result-container {
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-top: 20px;
-        }
-
-        .result-container p {
-            font-size: 16px;
-            margin: 10px 0;
-        }
-
-        .result-container span {
-            font-weight: bold;
-            color: #4caf50;
-        }
-
-        /* Plot Styles */
-        #plot {
-            margin-top: 20px;
-        }
-    </style>
 </head>
 <body>
     <h1>Calculate Probability of Success in Retirement</h1>
 
     <!-- goal definition section starts -->
-    <p>Goal: exceed a net worth of:</p>
-    <label for="netWorthThreshold"></label>
+    <label for="netWorthThreshold">Goal: net worth greater than:</label>
     <div class="radio-button-custom" id="netWorthThresholdRadio"></div>
-    <p>by age:</p>
-    <label for="finalAge"></label>
+    <label for="finalAge">at age:</label>
     <div class="radio-button-custom" id="finalAgeRadio"></div>
     <!-- goal definition section ends -->
 
