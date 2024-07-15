@@ -76,17 +76,17 @@
         // Radio button configurations
         const radioConfigs = [
             { key: 'finalAgeRadio', options: [50, 70, 90], defaultIndex: 3 },
-            { key: 'currentAgeRadio', options: [25, 30, 35], defaultIndex: 3 },
+            { key: 'currentAgeRadio', options: [25, 30, 35], defaultIndex: 2 },
             { key: 'retirementAgeRadio', options: [55, 60, 65], defaultIndex: 1 },
             // { key: 'initialNetWorthRadio', options: [100000, 300000, 500000], defaultIndex: 2 },
             { key: 'monthlySalaryRadio', options: [4000, 5000, 6000], defaultIndex: 2 },
             { key: 'monthlyExpensesRadio', options: [2000, 3000, 4000], defaultIndex: 2 },
-            { key: 'netWorthThresholdRadio', options: [300e3, 500e3, 700e3], defaultIndex: 2 },
-            { key: 'bondReturnRadio', options: [0.02, 0.03, 0.04], defaultIndex: 1 },
-            { key: 'stockMeanReturnRadio', options: [0.07, 0.09, 0.11], defaultIndex: 2 },
+            { key: 'netWorthThresholdRadio', options: [100e3, 500e3, 900e3], defaultIndex: 2 },
+            { key: 'bondReturnRadio', options: [0.02, 0.03, 0.04], defaultIndex: 2 },
+            { key: 'stockMeanReturnRadio', options: [0.08, 0.10, 0.12], defaultIndex: 2 },
             { key: 'stockStdDevRadio', options: [0.15, 0.19, 0.23], defaultIndex: 3 },
             { key: 'simulationsRadio', options: [5000, 10000, 20000], defaultIndex: 1 },
-            { key: 'inflationRateRadio', options: [0.01, 0.02, 0.03], defaultIndex: 1 }
+            { key: 'inflationRateRadio', options: [0.01, 0.02, 0.03], defaultIndex: 2 }
         ];
     
         // Function to get or create a RadioButtonCustom instance
@@ -133,7 +133,7 @@
                 stockMeanReturn: parseFloat(radioButtons.stockMeanReturnRadio.getValue()),
                 stockStdDev: parseFloat(radioButtons.stockStdDevRadio.getValue()),
                 simulations: parseInt(radioButtons.simulationsRadio.getValue()),
-                inflationRate: parseInt(radioButtons.inflationRateRadio.getValue())
+                inflationRate: parseFloat(radioButtons.inflationRateRadio.getValue())
             };
     
             // Strategy 1: Only bonds always
@@ -145,7 +145,7 @@
             document.getElementById('strategy2Result').innerText = `${(probOnlyStocks * 100).toFixed(2)}%`;
     
             // Strategy 3: only stocks below a net worth threshold, only bonds above the threshold
-            const maxThreshold = Math.max(1e6, 5 * parameters.netWorthThreshold);
+            const maxThreshold = Math.max(1e6, 10 * parameters.netWorthThreshold);
     
             // Function to generate an array with `n` elements evenly spaced between `start` and `end`
             function generateEvenlySpacedArray(start, end, n) {
@@ -203,11 +203,57 @@
             let successfulOutcomes = 0;
             const bondAllocation = 1 - stockAllocation;
             const salaryIncreaseRate = params.inflationRate; // assume salary grows with inflation
+            const totalInflationFactor = Math.pow(1 + params.inflationRate, params.finalAge - params.currentAge); // Corrected inflation factor calculation
+
+            for (let sim = 0; sim < params.simulations; sim++) {
+                let netWorth = params.initialNetWorth;
+                let annualExpenses = params.annualExpenses;
+                let annualSalary = params.annualSalary;
+                
+                for (let age = params.currentAge; age < params.finalAge; age++) {
+                    const stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+                    
+                    if (age < params.retirementAge) {
+                        netWorth += annualSalary - annualExpenses;
+                    } else {
+                        netWorth -= annualExpenses;
+                    }
+
+                    if (netWorth < 0) {
+                        netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+                    } else {
+                        netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+                    }
+
+                    annualSalary *= (1 + salaryIncreaseRate);
+                    annualExpenses *= (1 + params.inflationRate);
+                }
+
+                const adjustedNetWorth = netWorth / totalInflationFactor; // Corrected inflation adjustment
+                if (adjustedNetWorth >= params.netWorthThreshold) {
+                    successfulOutcomes++;
+                }
+            }
+            return successfulOutcomes / params.simulations;
+        }
+    
+        function computeProbabilityOfSuccessWithTwoAllocations(stock2BondThreshold, params) {
+            let successfulOutcomes = 0;
+            const salaryIncreaseRate = params.inflationRate; // assume salary grows with inflation
+            const totalInflationFactor = Math.pow(1 + params.inflationRate, params.finalAge - params.currentAge); // Corrected inflation factor calculation
+
             for (let sim = 0; sim < params.simulations; sim++) {
                 let netWorth = params.initialNetWorth;
                 let annualExpenses = params.annualExpenses;
                 let annualSalary = params.annualSalary;
                 for (let age = params.currentAge; age < params.finalAge; age++) {
+                    let stockAllocation;
+                    if (netWorth < stock2BondThreshold) {
+                        stockAllocation = 1; // all stocks
+                    } else {
+                        stockAllocation = 0; // all bonds
+                    }
+                    const bondAllocation = 1 - stockAllocation;
                     const stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
                     if (age < params.retirementAge) {
                         netWorth += annualSalary - annualExpenses;
@@ -219,47 +265,15 @@
                     } else {
                         netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
                     }
+                    annualSalary *= (1 + salaryIncreaseRate);
+                    annualExpenses *= (1 + params.inflationRate);
                 }
-                if (netWorth >= params.netWorthThreshold) {
+                const adjustedNetWorth = netWorth / totalInflationFactor; // Corrected inflation adjustment
+                if (adjustedNetWorth >= params.netWorthThreshold) {
                     successfulOutcomes++;
                 }
             }
             return successfulOutcomes / params.simulations;
-        }
-    
-        function computeProbabilityOfSuccessWithTwoAllocations(stock2BondThreshold, params) {
-        let successfulOutcomes = 0;
-        let salaryIncreaseRate = params.inflationRate; // assume salary grows with inflation
-        for (let sim = 0; sim < params.simulations; sim++) {
-            let netWorth = params.initialNetWorth;
-            let annualExpenses = params.annualExpenses;
-            let annualSalary = params.annualSalary;      
-            for (let age = params.currentAge; age < params.finalAge; age++) {
-                let stockAllocation;
-                if (netWorth < stock2BondThreshold) {
-                    stockAllocation = 1; // all stocks
-                } else {
-                    stockAllocation = 0; // all bonds
-                }
-                let bondAllocation = 1 - stockAllocation;
-                let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
-
-                if (age < params.retirementAge) {
-                    netWorth += annualSalary - annualExpenses;
-                } else {
-                    netWorth -= annualExpenses;
-                }
-                if (netWorth < 0) {
-                    netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-                } else {
-                    netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
-                }
-            }
-            if (netWorth >= params.netWorthThreshold) {
-                successfulOutcomes++;
-            }
-        }
-        return successfulOutcomes / params.simulations;
         }
     </script>
 </body>
