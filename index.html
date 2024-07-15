@@ -51,6 +51,9 @@
     <label for="stockStdDev">Stocks annual standard deviation: </label>
     <div class="radio-button-custom" id="stockStdDevRadio"></div>
 
+    <label for="inflationRate">Yearly inflation rate: </label>
+    <div class="radio-button-custom" id="inflationRateRadio"></div>
+
     <label for="simulations">Number of simulations: </label>
     <div class="radio-button-custom" id="simulationsRadio"></div>
 
@@ -69,20 +72,23 @@
     <div id="plot"></div>
     <script>
         const radioButtonInstances = {}; // Global object to hold RadioButtonCustom instances
-
-        // Create the radio groups
-        getOrCreateRadioButtonCustom('finalAgeRadio', [50, 70, 90], 3);
-        getOrCreateRadioButtonCustom('currentAgeRadio', [25, 30, 35], 3);
-        getOrCreateRadioButtonCustom('retirementAgeRadio', [45, 55, 65], 2);
-        //getOrCreateRadioButtonCustom('initialNetWorthRadio', [100e3, 300e3, 500e3], 1);
-        getOrCreateRadioButtonCustom('monthlySalaryRadio', [4000, 5000, 6000], 2);
-        getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 2);
-        getOrCreateRadioButtonCustom('netWorthThresholdRadio', [300e3, 500e3, 700e3], 1);
-        getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 2);
-        getOrCreateRadioButtonCustom('stockMeanReturnRadio', [0.07, 0.09, 0.11], 2);
-        getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 3);
-        getOrCreateRadioButtonCustom('simulationsRadio', [5000, 10000, 20000], 1);
-
+    
+        // Radio button configurations
+        const radioConfigs = [
+            { key: 'finalAgeRadio', options: [50, 70, 90], defaultIndex: 3 },
+            { key: 'currentAgeRadio', options: [25, 30, 35], defaultIndex: 3 },
+            { key: 'retirementAgeRadio', options: [55, 60, 65], defaultIndex: 1 },
+            // { key: 'initialNetWorthRadio', options: [100000, 300000, 500000], defaultIndex: 2 },
+            { key: 'monthlySalaryRadio', options: [4000, 5000, 6000], defaultIndex: 2 },
+            { key: 'monthlyExpensesRadio', options: [2000, 3000, 4000], defaultIndex: 2 },
+            { key: 'netWorthThresholdRadio', options: [300e3, 500e3, 700e3], defaultIndex: 2 },
+            { key: 'bondReturnRadio', options: [0.02, 0.03, 0.04], defaultIndex: 1 },
+            { key: 'stockMeanReturnRadio', options: [0.07, 0.09, 0.11], defaultIndex: 2 },
+            { key: 'stockStdDevRadio', options: [0.15, 0.19, 0.23], defaultIndex: 3 },
+            { key: 'simulationsRadio', options: [5000, 10000, 20000], defaultIndex: 1 },
+            { key: 'inflationRateRadio', options: [0.01, 0.02, 0.03], defaultIndex: 1 }
+        ];
+    
         // Function to get or create a RadioButtonCustom instance
         function getOrCreateRadioButtonCustom(key, options, defaultIndex) {
             if (!radioButtonInstances[key]) {
@@ -90,7 +96,10 @@
             }
             return radioButtonInstances[key];
         }
-
+    
+        // Initialize all radio buttons
+        radioConfigs.forEach(config => getOrCreateRadioButtonCustom(config.key, config.options, config.defaultIndex));
+    
         // Add slider inputs callback
         const sliders = document.querySelectorAll('.slider');
         sliders.forEach(slider => {
@@ -101,132 +110,130 @@
                 }
             });
         });
-
+    
         async function calculateAndPlot() {
-            // Retrieve or create RadioButtonCustom objects for parameters
-            const finalAgeRadio = getOrCreateRadioButtonCustom('finalAgeRadio', [40, 50, 60], 3);
-            const currentAgeRadio = getOrCreateRadioButtonCustom('currentAgeRadio', [25, 30, 35], 3);
-            const retirementAgeRadio = getOrCreateRadioButtonCustom('retirementAgeRadio', [10, 20, 30], 1);
-            //const initialNetWorthRadio = getOrCreateRadioButtonCustom('initialNetWorthRadio', [100000, 300000, 500000], 2);
-            const monthlySalaryRadio = getOrCreateRadioButtonCustom('monthlySalaryRadio', [4000, 5000, 6000], 1);
-            const monthlyExpensesRadio = getOrCreateRadioButtonCustom('monthlyExpensesRadio', [2000, 3000, 4000], 1);
-            const netWorthThresholdRadio = getOrCreateRadioButtonCustom('netWorthThresholdRadio', [300e3, 500e3, 700e3], 1);
-            const bondReturnRadio = getOrCreateRadioButtonCustom('bondReturnRadio', [0.01, 0.02, 0.03], 1);
-            const stockMeanReturnRadio = getOrCreateRadioButtonCustom('stockMeanReturnRadio', [0.07, 0.09, 0.11], 1);
-            const stockStdDevRadio = getOrCreateRadioButtonCustom('stockStdDevRadio', [0.15, 0.19, 0.23], 1);
-            const simulationsRadio = getOrCreateRadioButtonCustom('simulationsRadio', [5000, 10000, 20000], 1);
-
+            // Retrieve RadioButtonCustom objects for parameters
+            const radioButtons = radioConfigs.reduce((acc, config) => {
+                acc[config.key] = getOrCreateRadioButtonCustom(config.key, config.options, config.defaultIndex);
+                return acc;
+            }, {});
+    
             // Get slider input values
             const initialNetWorth = parseFloat(document.getElementById('initialNetWorth').value);
-
+    
             const parameters = {
-                finalAge: parseInt(finalAgeRadio.getValue()),
-                currentAge: parseInt(currentAgeRadio.getValue()),
-                retirementAge: parseInt(retirementAgeRadio.getValue()),
+                finalAge: parseInt(radioButtons.finalAgeRadio.getValue()),
+                currentAge: parseInt(radioButtons.currentAgeRadio.getValue()),
+                retirementAge: parseInt(radioButtons.retirementAgeRadio.getValue()),
                 initialNetWorth: initialNetWorth,
-                annualSalary: parseInt(monthlySalaryRadio.getValue())*12,
-                annualExpenses: parseInt(monthlyExpensesRadio.getValue())*12,
-                netWorthThreshold: parseInt(netWorthThresholdRadio.getValue()),
-                bondReturn: parseFloat(bondReturnRadio.getValue()),
-                stockMeanReturn: parseFloat(stockMeanReturnRadio.getValue()),
-                stockStdDev: parseFloat(stockStdDevRadio.getValue()),
-                simulations: parseInt(simulationsRadio.getValue())
+                annualSalary: parseInt(radioButtons.monthlySalaryRadio.getValue()) * 12,
+                annualExpenses: parseInt(radioButtons.monthlyExpensesRadio.getValue()) * 12,
+                netWorthThreshold: parseInt(radioButtons.netWorthThresholdRadio.getValue()),
+                bondReturn: parseFloat(radioButtons.bondReturnRadio.getValue()),
+                stockMeanReturn: parseFloat(radioButtons.stockMeanReturnRadio.getValue()),
+                stockStdDev: parseFloat(radioButtons.stockStdDevRadio.getValue()),
+                simulations: parseInt(radioButtons.simulationsRadio.getValue()),
+                inflationRate: parseInt(radioButtons.inflationRateRadio.getValue())
             };
-
+    
             // Strategy 1: Only bonds always
             const probOnlyBonds = computeProbabilityOfSuccessWithConstantAllocation(0, parameters);
             document.getElementById('strategy1Result').innerText = `${(probOnlyBonds * 100).toFixed(2)}%`;
-
+    
             // Strategy 2: Only stocks always
             const probOnlyStocks = computeProbabilityOfSuccessWithConstantAllocation(1, parameters);
             document.getElementById('strategy2Result').innerText = `${(probOnlyStocks * 100).toFixed(2)}%`;
-
+    
             // Strategy 3: only stocks below a net worth threshold, only bonds above the threshold
-            maxThreshold = Math.max(1e6, 5*parameters.netWorthThreshold);
-
+            const maxThreshold = Math.max(1e6, 5 * parameters.netWorthThreshold);
+    
             // Function to generate an array with `n` elements evenly spaced between `start` and `end`
             function generateEvenlySpacedArray(start, end, n) {
                 const step = (end - start) / (n - 1);
                 return Array.from({ length: n }, (v, i) => start + i * step);
             }
-
+    
             const stock2BondThreshold = generateEvenlySpacedArray(0, maxThreshold, 50);
-
+    
             let probVals = [];
-            let totalIterations = stock2BondThreshold.length;
+            const totalIterations = stock2BondThreshold.length;
             let iteration = 0;
             for (let idx = stock2BondThreshold.length - 1; idx >= 0; idx--) {
                 probVals[idx] = computeProbabilityOfSuccessWithTwoAllocations(stock2BondThreshold[idx], parameters);
                 // Update progress bar
                 iteration++;
-                let progress = Math.floor((iteration / totalIterations) * 100);
+                const progress = Math.floor((iteration / totalIterations) * 100);
                 document.getElementById('progress-bar').style.width = progress + '%';
                 document.getElementById('progress-bar').innerText = progress + '%';
                 // Allow the UI to update
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
-
-            let bestProb = Math.max(...probVals);
-            let bestIdx = probVals.indexOf(bestProb);
-            let bestThreshold = stock2BondThreshold[bestIdx];
-
+    
+            const bestProb = Math.max(...probVals);
+            const bestIdx = probVals.indexOf(bestProb);
+            const bestThreshold = stock2BondThreshold[bestIdx];
+    
             document.getElementById('strategy3Result').innerText = `${(bestProb * 100).toFixed(2)}%, switch at net worth threshold of ${bestThreshold.toExponential(2)} $`;
-
-            let data = [{
-            x: stock2BondThreshold,
-            y: probVals,
-            type: 'line'
-        }];
-
-        let layout = {
-            title: 'Probability of Success for Strategy 3',
-            xaxis: {title: 'Net Worth Threshold ($)'},
-            yaxis: {title: 'Probability'}
-        };
-
-        Plotly.newPlot('plot', data, layout);
+    
+            const data = [{
+                x: stock2BondThreshold,
+                y: probVals,
+                type: 'line'
+            }];
+    
+            const layout = {
+                title: 'Probability of Success for Strategy 3',
+                xaxis: { title: 'Net Worth Threshold ($)' },
+                yaxis: { title: 'Probability' }
+            };
+    
+            Plotly.newPlot('plot', data, layout);
         }
-
+    
         document.getElementById('calculateButton').addEventListener('click', calculateAndPlot);
-
+    
         function gaussianRandom(mean, stdev) {
-        let u = 1 - Math.random(); // Converting [0,1) to (0,1]
-        let v = Math.random();
-        let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-        return z * stdev + mean;
+            const u = 1 - Math.random(); // Converting [0,1) to (0,1]
+            const v = Math.random();
+            const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+            return z * stdev + mean;
         }
-
+    
         function computeProbabilityOfSuccessWithConstantAllocation(stockAllocation, params) {
-        let successfulOutcomes = 0;                             
-        let bondAllocation = 1 - stockAllocation;
-
-        for (let sim = 0; sim < params.simulations; sim++) {
-            let netWorth = params.initialNetWorth;
-            for (let age = params.currentAge; age < params.finalAge; age++) {
-                let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
-                if (age < params.retirementAge) {
-                    netWorth += params.annualSalary - params.annualExpenses;
-                } else {
-                    netWorth -= params.annualExpenses;
+            let successfulOutcomes = 0;
+            const bondAllocation = 1 - stockAllocation;
+            const salaryIncreaseRate = params.inflationRate; // assume salary grows with inflation
+            for (let sim = 0; sim < params.simulations; sim++) {
+                let netWorth = params.initialNetWorth;
+                let annualExpenses = params.annualExpenses;
+                let annualSalary = params.annualSalary;
+                for (let age = params.currentAge; age < params.finalAge; age++) {
+                    const stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
+                    if (age < params.retirementAge) {
+                        netWorth += annualSalary - annualExpenses;
+                    } else {
+                        netWorth -= annualExpenses;
+                    }
+                    if (netWorth < 0) {
+                        netWorth *= 1.30; // assume 30% yearly interest debt on credit card
+                    } else {
+                        netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+                    }
                 }
-                if (netWorth < 0) {
-                    netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-                } else {
-                    netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
+                if (netWorth >= params.netWorthThreshold) {
+                    successfulOutcomes++;
                 }
             }
-            if (netWorth >= params.netWorthThreshold) {
-                successfulOutcomes++;
-            }
+            return successfulOutcomes / params.simulations;
         }
-        return successfulOutcomes / params.simulations;
-        }
-
+    
         function computeProbabilityOfSuccessWithTwoAllocations(stock2BondThreshold, params) {
         let successfulOutcomes = 0;
-
+        let salaryIncreaseRate = params.inflationRate; // assume salary grows with inflation
         for (let sim = 0; sim < params.simulations; sim++) {
             let netWorth = params.initialNetWorth;
+            let annualExpenses = params.annualExpenses;
+            let annualSalary = params.annualSalary;      
             for (let age = params.currentAge; age < params.finalAge; age++) {
                 let stockAllocation;
                 if (netWorth < stock2BondThreshold) {
@@ -238,44 +245,9 @@
                 let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
 
                 if (age < params.retirementAge) {
-                    netWorth += params.annualSalary - params.annualExpenses;
+                    netWorth += annualSalary - annualExpenses;
                 } else {
-                    netWorth -= params.annualExpenses;
-                }
-                if (netWorth < 0) {
-                    netWorth *= 1.30; // assume 30% yearly interest debt on credit card
-                } else {
-                    netWorth *= (1 + stockAllocation * stockReturn + bondAllocation * params.bondReturn);
-                }
-            }
-            if (netWorth >= params.netWorthThreshold) {
-                successfulOutcomes++;
-            }
-        }
-        return successfulOutcomes / params.simulations;
-        }
-
-        function computeProbabilityOfSuccessWithThreeAllocations(stock2BondThreshold, params) {
-        let successfulOutcomes = 0;
-
-        for (let sim = 0; sim < params.simulations; sim++) {
-            let netWorth = params.initialNetWorth;
-            for (let age = params.currentAge; age < params.finalAge; age++) {
-                let stockAllocation;
-                if (netWorth < stock2BondThreshold[0]) {
-                    stockAllocation = 1; // all stocks
-                } else if (netWorth < stock2BondThreshold[1]) {
-                    stockAllocation = 0.5; // 50-50
-                } else {
-                    stockAllocation = 0; // all bonds
-                }
-                let bondAllocation = 1 - stockAllocation;
-                let stockReturn = gaussianRandom(params.stockMeanReturn, params.stockStdDev);
-
-                if (age < params.retirementAge) {
-                    netWorth += params.annualSalary - params.annualExpenses;
-                } else {
-                    netWorth -= params.annualExpenses;
+                    netWorth -= annualExpenses;
                 }
                 if (netWorth < 0) {
                     netWorth *= 1.30; // assume 30% yearly interest debt on credit card
