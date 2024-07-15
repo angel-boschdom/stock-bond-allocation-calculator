@@ -34,7 +34,7 @@
         <span class="tooltip-icon">?</span>
         <div class="tooltip-text">The total value of your savings (including pension investment fund) at your current age</div>
     </label>
-    <input type="range" id="initialNetWorth" min="0" max="500e3" value="200e3" step="1e3" class="slider">
+    <input type="range" id="initialNetWorth" min="0" max="500e3" value="200e3" step="5e3" class="slider">
 
     <label for="monthlySalary">Monthly salary (+ pension contribution): </label>
     <div class="radio-button-custom" id="monthlySalaryRadio"></div>
@@ -145,7 +145,7 @@
             document.getElementById('strategy2Result').innerText = `${(probOnlyStocks * 100).toFixed(2)}%`;
     
             // Strategy 3: only stocks below a net worth threshold, only bonds above the threshold
-            const maxThreshold = Math.max(1e6, 10 * parameters.netWorthThreshold);
+            const maxThreshold = Math.max(3e6, 10 * parameters.netWorthThreshold);
     
             // Function to generate an array with `n` elements evenly spaced between `start` and `end`
             function generateEvenlySpacedArray(start, end, n) {
